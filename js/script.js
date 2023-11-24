@@ -94,6 +94,9 @@ async function displayMovieDetails(){
 
   const movie = await fetchAPIData(`movie/${movieId}`)
 
+  // Arkaplan yükle
+  displayBackgroundImage('movie', movie.backdrop_path);
+
   const div = document.createElement("div");
 
   div.innerHTML = `
@@ -127,7 +130,7 @@ async function displayMovieDetails(){
             </p>
             <p class="text-muted">Çıkış Tarihi: ${movie.release_date}</p>
             <p>
-              ${movie.overview}
+              ${movie.overview ? movie.overview : "Bu filme dair Türkçe bir açıklama bulunmuyor"}
             </p>
             <h5>Kategoriler</h5>
             <ul class="list-group">
@@ -137,7 +140,7 @@ async function displayMovieDetails(){
           </div>
         </div>
         <div class="details-bottom">
-          <h2>Film Hakkında</h2>
+          <h2>FİLM HAKKINDA</h2>
           <ul>
             <li><span class="text-secondary">Bütçe:</span> $${addCommasToMoney(movie.budget)}</li>
             <li><span class="text-secondary">Gelir:</span> $${addCommasToMoney(movie.revenue)}</li>
@@ -156,6 +159,100 @@ async function displayMovieDetails(){
   document.getElementById("movie-details").appendChild(div);
 }
 
+// Dizi detayları Sayfası
+async function displayShowDetails(){
+
+  // Soru işaretinden sonraki kısmı gösterir 
+  const showId = location.search.split("=")[1];
+
+  const show = await fetchAPIData(`tv/${showId}`)
+
+  // Arkaplan yükle
+  displayBackgroundImage('show', show.backdrop_path);
+
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+      <div class="details-top">
+          <div>
+          ${
+            show.poster_path ? 
+              `
+                <img
+                src="https://image.tmdb.org/t/p/w500${show.poster_path}"
+                class="card-img-top"
+                alt="${show.name}"
+                />
+              `
+              :
+              `
+                <img
+                src="../images/no-image.jpg"
+                class="card-img-top"
+                alt="${show.name}"
+                />
+             `
+
+          }
+          </div>
+          <div>
+            <h2>${show.name}</h2>
+            <p>
+              <i class="fas fa-star text-primary"></i>
+              ${show.vote_average.toFixed(2)} / 10
+            </p>
+            <p class="text-muted">Çıkış Tarihi: ${show.first_air_date}</p>
+            <p>
+              ${show.overview ? show.overview : "Bu diziye dair Türkçe bir açıklama bulunmuyor"}
+            </p>
+            <h5>Kategoriler</h5>
+            <ul class="list-group">
+              ${show.genres.map(genre => `<li>${genre.name}</li>`).join('')}
+            </ul>
+            <a href="${show.homepage}" target="_blank" class="btn">Dizi Sayfasını Ziyaret Et</a>
+          </div>
+        </div>
+        <div class="details-bottom">
+          <h2>DİZİ HAKKINDA</h2>
+          <ul>
+            <li><span class="text-secondary">Bölüm Sayısı:</span> ${show.number_of_episodes}</li>
+            <li>
+              <span class="text-secondary">Yayınlanan Son Bölüm:</span> ${show.last_episode_to_air.name}
+            </li>
+            <li><span class="text-secondary">Sezon Sayısı:</span> ${show.number_of_seasons}</li>
+          </ul>
+          <h4>Yayıncı Şirketler</h4>
+          <div class="list-group">
+            ${show.production_companies.map(company => `<span>${company.name}</span>`).join(', ')}
+          </div>
+        </div>
+  `
+
+  document.getElementById("show-details").appendChild(div);
+}
+
+
+// Detaylar sayfalarının arkaplanı görüntüle
+function displayBackgroundImage(type, backgroundPath){
+  const overlayDiv = document.createElement("div");
+  overlayDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/original/${backgroundPath})`
+  overlayDiv.style.backgroundSize = "cover" 
+  overlayDiv.style.backgroundPosition = "center" 
+  overlayDiv.style.backgroundRepeat = "no-repeat"
+  overlayDiv.style.height = "100vh"
+  overlayDiv.style.width = "100vw"
+  overlayDiv.style.position = "absolute" 
+  overlayDiv.style.top = "0"
+  overlayDiv.style.left = "0" 
+  overlayDiv.style.zIndex = "-1"
+  overlayDiv.style.opacity = "0.1"
+  
+  if(type === "movie"){
+    document.querySelector("#movie-details").appendChild(overlayDiv);
+  }else if(type === "show"){
+    document.querySelector("#show-details").appendChild(overlayDiv);
+  }
+}
 
 // TMDB api'den data fetchleme
 async function fetchAPIData(endpoint){
@@ -207,7 +304,7 @@ function init() {
   } else if (global.currentPage === "/movie-details.html") {
     displayMovieDetails();
   } else if (global.currentPage === "/tv-details.html") {
-    console.log("Dizi Hakkında");
+    displayShowDetails();
   } else if (global.currentPage === "/search.html") {
     console.log("Arama");
   }
