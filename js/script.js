@@ -1,5 +1,15 @@
 const global = {
   currentPage: location.pathname,
+  search: {
+    term: "",
+    type: "",
+    page: 1,
+    totalPages: 1
+  },
+  api: {
+    apiKey: "",
+    apiUrl: "https://api.themoviedb.org/3/",
+  }
 };
 
 // Popüler filmleri görüntüle
@@ -254,6 +264,32 @@ function displayBackgroundImage(type, backgroundPath){
   }
 }
 
+// Arama butonu 
+async function search(){
+  const queryString = location.search;
+  
+  const urlParams = new URLSearchParams(queryString);
+
+  global.search.type = urlParams.get("type");
+  global.search.term = urlParams.get("search-term");
+
+  if(global.search.term !== "" && global.search.term !== null){
+    const results = await searchAPIData();
+    console.log(results);
+  }else{
+    showAlert("Lütfen bir içerik ismi giriniz")
+  }
+}
+
+function showAlert(message, className){
+  const alertEl = document.createElement("div");
+  alertEl.classList.add("alert", className);
+  alertEl.appendChild(document.createTextNode(message));
+  document.querySelector("#alert").appendChild(alertEl);
+
+  setTimeout(() =>alertEl.remove(), 3000)
+}
+
 // Slider 
 async function displaySlider(){
   const { results } = await fetchAPIData("movie/now_playing")
@@ -302,12 +338,27 @@ function initSwiper(){
 
 // TMDB api'den data fetchleme
 async function fetchAPIData(endpoint){
-  const API_KEY = "";
-  const API_URL = "https://api.themoviedb.org/3/";
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
 
   showSpinner();
 
   const response = await fetch(`${API_URL}${endpoint}?api_key=${API_KEY}&language=tr-TR`)
+
+  const data = response.json();
+
+  hideSpinner();
+
+  return data;
+}
+// Search kısmı için API'dan veri çekme
+async function searchAPIData(){
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
+
+  showSpinner();
+
+  const response = await fetch(`${API_URL}search/${global.search.type}?api_key=${API_KEY}&language=tr-TR&query=${global.search.term}`)
 
   const data = response.json();
 
@@ -353,7 +404,7 @@ function init() {
   } else if (global.currentPage === "/tv-details.html") {
     displayShowDetails();
   } else if (global.currentPage === "/search.html") {
-    console.log("Arama");
+    search();
   }
 
   markLink();
