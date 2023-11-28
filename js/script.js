@@ -4,7 +4,8 @@ const global = {
     term: "",
     type: "",
     page: 1,
-    totalPages: 1
+    totalPages: 1,
+    totalResults: 0,
   },
   api: {
     apiKey: "",
@@ -274,7 +275,11 @@ async function search(){
   global.search.term = urlParams.get("search-term");
 
   if(global.search.term !== "" && global.search.term !== null){
-    const { results, total_pages, page } = await searchAPIData();
+    const { results, total_pages, page, total_results } = await searchAPIData();
+
+    global.search.page = page;
+    global.search.totalPages = total_pages;
+    global.search.totalResults = total_results;
     
     if(results.length === 0){
       showAlert("Aradığınız içerik bulunamadı", "error");
@@ -292,6 +297,12 @@ async function search(){
 
 // Arama Sonuçlarını DOM'a aktar
 function displaySearchResults(results){
+  // önceki sonuçlar temizleme
+  document.querySelector("#search-results").innerHTML = '';
+  document.querySelector("#search-results-heading").innerHTML = '';
+  document.querySelector("#pagination").innerHTML = '';
+
+
   results.forEach(result => {
     const div = document.createElement("div");
     div.classList.add("card")
@@ -330,7 +341,50 @@ function displaySearchResults(results){
           </div>
     `
 
+    document.querySelector("#search-results-heading").innerHTML = `
+            <h2>
+              Bulunan ${global.search.totalResults} sonuçtan ${results.length} tanesi görüntüleniyor
+            </h2>
+
+    `;
+
     document.querySelector("#search-results").appendChild(div);       
+  })
+
+  displayPagination();
+}
+
+// Sayfa sayı bilgisi
+function displayPagination(){
+  const div = document.createElement("div");
+  div.classList.add("pagination");
+  div.innerHTML = `
+          <button class="btn btn-primary" id="prev">Önceki</button>
+          <button class="btn btn-primary" id="next">Sonraki</button>
+          <div class="page-counter">${global.search.totalPages} sayfanın ${global.search.page}. sayfası görüntüleniyor</div>
+  `
+
+  document.querySelector("#pagination").appendChild(div);
+
+  if(global.search.page === 1){
+    document.querySelector("#prev").disabled = true;
+  }
+
+  if(global.search.page === global.search.totalPages){
+    document.querySelector("#next").disabled = true;
+  }
+
+
+  document.querySelector("#next").addEventListener("click", async ()=>{
+    global.search.page++;
+    const { results, total_pages } = await searchAPIData();
+    displaySearchResults(results)
+  })
+
+  document.querySelector("#prev").addEventListener("click", async ()=>{
+    global.search.page--;
+    const { results, total_pages } = await searchAPIData();
+    displaySearchResults(results)
   })
 }
 
@@ -412,7 +466,7 @@ async function searchAPIData(){
 
   showSpinner();
 
-  const response = await fetch(`${API_URL}search/${global.search.type}?api_key=${API_KEY}&language=tr-TR&query=${global.search.term}`)
+  const response = await fetch(`${API_URL}search/${global.search.type}?api_key=${API_KEY}&language=tr-TR&query=${global.search.term}&page=${global.search.page}`)
 
   const data = response.json();
 
